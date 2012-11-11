@@ -1,0 +1,7 @@
+*.un~
+*.hex
+*.o
+*.elf
+*.swp
+*.swo
+
