@@ -17,4 +17,5 @@ I'm using a [debounce circuit using NAND ports](http://www.robotroom.com/Debounc
           ------
 
 PB3 is the Tempo Scale pin (three states), PB4 is the Double Time pin. These should be connected to pins 12 and 11 of the Taptation, respectively. INT0 is the interrupt used with the button.
+You can put an optional LED on PB2 (pin 7), currently used for debug output.
 
