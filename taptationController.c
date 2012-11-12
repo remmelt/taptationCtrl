@@ -5,6 +5,7 @@
 #include <util/delay.h>
 #include <avr/interrupt.h>
 #include <avr/sleep.h>
+#include <avr/power.h>
 
 #define LED        PB2
 #define TEMPOSCALE PB3
@@ -70,8 +71,6 @@ void setState(uint8_t theState){
 
 void advanceState(){
     state++;
-    state %= 5;
-    setState(state);
 }
 
 void blinkTimes(uint8_t times){
@@ -95,17 +94,20 @@ int main(void) {
     // General Interrupt Mask Register
     // INT0: enable external interrupt 0 (on PB1 / pin 6)
     // Attiny datasheet p47
-    GIMSK = 1 << INT0;
+    setBit(GIMSK, INT0);
     
     // Set interrupt sense control in MCU Control Register
     // ISC01,ISC00:
     // (0,0) low level,    (0,1) any change,
     // (1,0) falling edge, (1,1) rising edge
     // Attiny datasheet p47
-    MCUCR = 1 << ISC01;
+    MCUCR = 0; // 1 << ISC01;
+    
+    // TODO: Power down modules
     
     // Set the sleep mode
-    set_sleep_mode(SLEEP_MODE_IDLE);
+    set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+//    set_sleep_mode(SLEEP_MODE_IDLE);
 
     // Set enable interrupts
     sei();
@@ -116,13 +118,26 @@ int main(void) {
     advanceState();
     
     while(1){
+        state %= 5;
+        setState(state);
         blinkTimes(state + 1);
-        sleep_mode();
+        
+        
+        
+        sleep_enable();
+        
+        setBit(GIMSK, INT0);
+
+        sei();
+        sleep_cpu();
+        sleep_disable();
     }
     
 }
 
 ISR (INT0_vect) {
-//    cli();
+    sleep_disable();
+    unsetBit(GIMSK, INT0);
+//    PCMSK &= ~(1<<INT0);
     advanceState();
 }
