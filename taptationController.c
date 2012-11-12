@@ -104,6 +104,9 @@ int main(void) {
     // Attiny datasheet p47
     MCUCR = 1 << ISC01;
     
+    // Set the sleep mode
+    set_sleep_mode(SLEEP_MODE_IDLE);
+
     // Set enable interrupts
     sei();
     
@@ -114,6 +117,7 @@ int main(void) {
     
     while(1){
         blinkTimes(state + 1);
+        sleep_mode();
     }
     
 }
