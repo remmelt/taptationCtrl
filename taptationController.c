@@ -2,8 +2,9 @@
 
 //#include <stdbool.h>
 //#include <avr/io.h>
-//#include <util/delay.h>
+#include <util/delay.h>
 #include <avr/interrupt.h>
+#include <avr/sleep.h>
 
 #define LED        PB2
 #define TEMPOSCALE PB3
@@ -22,7 +23,7 @@
 #define setAsOutput(port) { setBit(DDRB, port); }
 #define setAsInput(port) { unsetBit(DDRB, port); }
 
-const int states[5][2] = {
+const uint8_t states[5][2] = {
 	{ D1_1, OFF },  // 1/1
 	{ D1_2, OFF },  // 1/2
 	{ D1_2, ON  },  // 1/4
@@ -30,13 +31,13 @@ const int states[5][2] = {
 	{ D3_4, ON  },  // 3/8 (dotted sixteenth)
 };
 
-volatile int state = -1;
+volatile uint8_t state = -1;
 
 void toggleLedState(){
     toggleBit(PORTB, LED);
 }
 
-void setDblTime(int state){
+void setDblTime(uint8_t state){
     if (state == OFF){
         setAsInput(DBLTIME);
     } else {
@@ -45,7 +46,7 @@ void setDblTime(int state){
     }
 }
 
-void setTempoScale(int state){
+void setTempoScale(uint8_t state){
     switch (state) {
         case D1_1: default:
             setAsOutput(TEMPOSCALE);
@@ -61,8 +62,8 @@ void setTempoScale(int state){
     }
 }
 
-void setState(int theState){
-    toggleLedState();
+void setState(uint8_t theState){
+//    toggleLedState();
     setTempoScale(states[theState][0]);
     setDblTime(states[theState][1]);
 }
@@ -71,6 +72,22 @@ void advanceState(){
     state++;
     state %= 5;
     setState(state);
+}
+
+void blinkTimes(uint8_t times){
+    setAsOutput(LED);
+    unsetBit(PORTB, LED);
+    uint8_t delayTimeMs = 100;
+    for (uint8_t c = 1; c <= times; c++) {
+        setBit(PORTB, LED);
+        _delay_ms(delayTimeMs);
+        unsetBit(PORTB, LED);
+        _delay_ms(delayTimeMs);
+        if(c % 2 == 0) {
+            _delay_ms(delayTimeMs);
+        }
+    }
+    _delay_ms(500);
 }
 
 int main(void) {
@@ -96,10 +113,12 @@ int main(void) {
     advanceState();
     
     while(1){
+        blinkTimes(state + 1);
     }
     
 }
 
 ISR (INT0_vect) {
+//    cli();
     advanceState();
 }

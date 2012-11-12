@@ -22,7 +22,7 @@ PROGRAM = taptationController
 MCU = attiny13
 CC = avr-gcc
 OBJCOPY = avr-objcopy
-CFLAGS += -Wall -g -Os -mmcu=$(MCU)
+CFLAGS += -Wall -g -Os -mmcu=$(MCU) -std=gnu99
 LDFLAGS +=
 OBJS = $(PROGRAM).o
  
