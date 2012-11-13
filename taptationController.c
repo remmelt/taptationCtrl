@@ -2,10 +2,10 @@
 
 //#include <stdbool.h>
 //#include <avr/io.h>
-#include <util/delay.h>
+//#include <util/delay.h>
 #include <avr/interrupt.h>
 #include <avr/sleep.h>
-#include <avr/power.h>
+//#include <avr/power.h>
 
 #define LED        PB2
 #define TEMPOSCALE PB3
@@ -32,11 +32,8 @@ const uint8_t states[5][2] = {
 	{ D3_4, ON  },  // 3/8 (dotted sixteenth)
 };
 
-volatile uint8_t state = -1;
-
-void toggleLedState(){
-    toggleBit(PORTB, LED);
-}
+volatile uint8_t state = 0;
+volatile uint8_t travel = 0;
 
 void setDblTime(uint8_t state){
     if (state == OFF){
@@ -64,80 +61,47 @@ void setTempoScale(uint8_t state){
 }
 
 void setState(uint8_t theState){
-//    toggleLedState();
     setTempoScale(states[theState][0]);
     setDblTime(states[theState][1]);
-}
-
-void advanceState(){
-    state++;
-}
-
-void blinkTimes(uint8_t times){
-    setAsOutput(LED);
-    unsetBit(PORTB, LED);
-    uint8_t delayTimeMs = 100;
-    for (uint8_t c = 1; c <= times; c++) {
-        setBit(PORTB, LED);
-        _delay_ms(delayTimeMs);
-        unsetBit(PORTB, LED);
-        _delay_ms(delayTimeMs);
-        if(c % 2 == 0) {
-            _delay_ms(delayTimeMs);
-        }
-    }
-    _delay_ms(500);
 }
 
 int main(void) {
     
     // General Interrupt Mask Register
     // INT0: enable external interrupt 0 (on PB1 / pin 6)
-    // Attiny datasheet p47
-    setBit(GIMSK, INT0);
-    
-    // Set interrupt sense control in MCU Control Register
-    // ISC01,ISC00:
-    // (0,0) low level,    (0,1) any change,
-    // (1,0) falling edge, (1,1) rising edge
-    // Attiny datasheet p47
-    MCUCR = 0; // 1 << ISC01;
+    // Attiny datasheet p46
+    setBit(GIMSK, PCIE);
+    setBit(PCMSK, PCINT1);
     
     // TODO: Power down modules
     
     // Set the sleep mode
     set_sleep_mode(SLEEP_MODE_PWR_DOWN);
-//    set_sleep_mode(SLEEP_MODE_IDLE);
-
-    // Set enable interrupts
-    sei();
     
-    setAsOutput(LED);
-    setBit(PORTB, LED);
-    
-    advanceState();
-    
+//    setAsOutput(LED);
+//    setBit(PORTB, LED);
+        
     while(1){
+//          blinkTimes(state + 1);
+        
         state %= 5;
         setState(state);
-        blinkTimes(state + 1);
-        
-        
-        
+
         sleep_enable();
         
-        setBit(GIMSK, INT0);
-
+        // Set enable interrupts
         sei();
+        
         sleep_cpu();
         sleep_disable();
     }
     
 }
 
-ISR (INT0_vect) {
-    sleep_disable();
-    unsetBit(GIMSK, INT0);
-//    PCMSK &= ~(1<<INT0);
-    advanceState();
+ISR (PCINT0_vect) {
+    cli();
+    travel = !travel;
+    if(!travel) {
+        state++;
+    }
 }
